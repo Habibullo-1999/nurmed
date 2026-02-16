@@ -2,6 +2,7 @@ package migration
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -29,10 +30,11 @@ type Params struct {
 }
 
 const (
-	migrationFilesPath = "file://migrations/tj"
+	migrationFilesPath = "file://migrations"
 )
 
 func New(p Params) {
+	fmt.Println(p.Config.GetString("database.migration"))
 	m, err := migrate.New(migrationFilesPath, p.Config.GetString("database.migration"))
 	if err != nil {
 		p.Logger.Error(nil, "err from migration.New", zap.Error(err))

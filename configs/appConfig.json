@@ -3,5 +3,19 @@
     "host": "http://127.0.0.1",
     "port": ":9050",
     "version": "v1"
+  },
+  "database": {
+    "dns": "postgres://nurmed:nurmed@localhost:5436/nurmed?sslmode=disable",
+    "migration": "postgres://nurmed:nurmed@localhost:5436/nurmed?sslmode=disable"
+  },
+  "auth": {
+    "jwtSecret": "replace-this-secret-with-a-strong-random-value",
+    "accessTtlMinutes": 15,
+    "refreshTtlDays": 30,
+    "maxFailedAttempts": 5,
+    "lockDurationMinutes": 15,
+    "refreshCookieName": "refresh_token",
+    "secureCookies": true,
+    "loginRateLimitPerMinute": 20
   }
 }

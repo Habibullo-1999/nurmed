@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
+	authhandler "nurmed/cmd/nurmed/handlers/auth"
+	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
+	"nurmed/cmd/nurmed/handlers/users"
+	"nurmed/internal/auth"
 	"nurmed/pkg/config"
 	"nurmed/pkg/logger"
 	"nurmed/pkg/utils"
@@ -24,11 +28,16 @@ type Params struct {
 	Lifecycle fx.Lifecycle
 	Config    config.Config
 	Logger    logger.ILogger
+	AuthService auth.Service
+	AuthHandler authhandler.Handler
+	UserHandler users.Handler
 }
 
 func NewRouter(params Params) {
 
 	ginRouter := gin.New()
+	registerSwaggerRoutes(ginRouter)
+	mw := restmiddleware.New(params.AuthService, params.Logger, params.Config)
 
 	baseUrlV2, version := "/api/", params.Config.GetString("server.version")
 
@@ -40,6 +49,21 @@ func NewRouter(params Params) {
 				"version": version,
 			})
 		})
+		authAPI := api.Group("/auth")
+		{
+			authAPI.POST("/login", mw.LoginRateLimitMiddleware(), params.AuthHandler.Login)
+			authAPI.POST("/refresh", params.AuthHandler.Refresh)
+			authAPI.POST("/logout", params.AuthHandler.Logout)
+		}
+		usersAPI := api.Group("/users")
+		{
+			usersAPI.Use(
+				mw.AuthMiddleware(),
+				mw.ScopeMiddleware(),
+			)
+			usersAPI.GET("", mw.PermissionMiddleware("users.read"), params.UserHandler.GetUsers)
+			usersAPI.POST("", mw.PermissionMiddleware("users.create"), params.UserHandler.CreateUser)
+		}
 	}
 
 	server := http.Server{

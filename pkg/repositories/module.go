@@ -1,10 +1,10 @@
-package handlers
+package repositories
 
 import (
 	"go.uber.org/fx"
 
-	"nurmed/cmd/nurmed/handlers/auth"
-	"nurmed/cmd/nurmed/handlers/users"
+	"nurmed/pkg/repositories/auth"
+	"nurmed/pkg/repositories/users"
 )
 
 var Module = fx.Options(

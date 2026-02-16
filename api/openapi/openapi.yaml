@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: NurMed API
+  version: v1
+  description: API documentation for NurMed ERP/CRM backend
+servers:
+  - url: /api/v1
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: v1
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with username/email/phone and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          description: Too many login attempts
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token using refresh token cookie or X-Refresh-Token header
+      operationId: refresh
+      parameters:
+        - in: header
+          name: X-Refresh-Token
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and revoke refresh session
+      operationId: logout
+      parameters:
+        - in: header
+          name: X-Refresh-Token
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logout success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: getUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Users]
+      summary: Create user with role scope
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+
+  schemas:
+    Response:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Успешно выполнено
+        payload:
+          nullable: true
+
+    LoginRequest:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          example: owner
+        password:
+          type: string
+          example: StrongPass123!
+
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+        tokenType:
+          type: string
+          example: Bearer
+        userId:
+          type: integer
+          format: int64
+        userName:
+          type: string
+
+    UserRoleAssignment:
+      type: object
+      required: [roleCode]
+      properties:
+        roleCode:
+          type: string
+          example: owner
+        scopeType:
+          type: string
+          enum: [global, company, branch, warehouse]
+          example: company
+        scopeId:
+          type: integer
+          format: int64
+        ownOnly:
+          type: boolean
+
+    CreateUserRequest:
+      type: object
+      required: [userName, password, firstName, role]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        userName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        status:
+          type: string
+          enum: [active, blocked, invited, deleted]
+          example: active
+        isSuperAdmin:
+          type: boolean
+        role:
+          $ref: '#/components/schemas/UserRoleAssignment'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        userName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        status:
+          type: string
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

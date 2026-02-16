@@ -8,6 +8,8 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/opentracing-contrib/go-gin v0.0.0-20241203023905-a5650667207a
 	github.com/opentracing-contrib/go-gorilla v0.0.0-20250314035245-902eddd291c5
+	github.com/jackc/pgx/v5 v5.5.4
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/rs/cors v1.11.1
 	github.com/spf13/viper v1.21.0
@@ -31,6 +33,9 @@ require (
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/google/go-github/v39 v39.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
