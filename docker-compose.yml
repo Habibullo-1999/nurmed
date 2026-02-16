@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  nurmed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nurmed:latest
+    ports:
+      - "9050:9050"
+    environment:
+      - GIN_MODE=release
+      - SERVER_PORT=:9050
+      - SERVER_HOST=http://0.0.0.0
+    volumes:
+      - ./configs:/app/configs:ro
+    restart: unless-stopped

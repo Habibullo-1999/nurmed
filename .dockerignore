@@ -1,0 +1,32 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build artifacts
+dist/
+build/
+coverage/
+tmp/
+*.cache
+
+# Logs
+*.log
+app.log
+
+# Vendor / dependencies
+vendor/
+node_modules/
+
+# IDE / tooling
+.idea/
+.vscode/
+.DS_Store
+
+# Git
+.git
