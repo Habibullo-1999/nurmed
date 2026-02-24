@@ -2,7 +2,6 @@ package migration
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -19,7 +18,6 @@ import (
 var Module = fx.Options(
 	fx.Invoke(
 		New,
-		NewDevice,
 	),
 )
 
@@ -34,7 +32,6 @@ const (
 )
 
 func New(p Params) {
-	fmt.Println(p.Config.GetString("database.migration"))
 	m, err := migrate.New(migrationFilesPath, p.Config.GetString("database.migration"))
 	if err != nil {
 		p.Logger.Error(nil, "err from migration.New", zap.Error(err))
@@ -42,19 +39,6 @@ func New(p Params) {
 	}
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		p.Logger.Error(nil, "err from up migration", zap.Error(err))
-		os.Exit(1)
-	}
-}
-
-func NewDevice(p Params) {
-	m, err := migrate.New("file://migrations/device", p.Config.GetString("database.device.migration"))
-	if err != nil {
-		p.Logger.Error(nil, "err from migration.New", zap.Error(err))
-		os.Exit(1)
-	}
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		p.Logger.Error(nil, "err from up migration", zap.Error(err))
 		os.Exit(1)
 	}
