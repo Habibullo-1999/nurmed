@@ -2,6 +2,8 @@ package sales
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -253,7 +255,15 @@ func generateDocumentNo(channel string) string {
 		prefix = "POS"
 	}
 
-	return fmt.Sprintf("%s-%d", prefix, time.Now().UTC().UnixNano())
+	return fmt.Sprintf("%s-%d-%s", prefix, time.Now().UTC().UnixNano(), randomDocumentSuffix())
+}
+
+func randomDocumentSuffix() string {
+	bytes := make([]byte, 2)
+	if _, err := rand.Read(bytes); err != nil {
+		return fmt.Sprintf("%04x", time.Now().UTC().UnixNano()&0xffff)
+	}
+	return hex.EncodeToString(bytes)
 }
 
 func mapOrderResponse(order structs.SalesOrder, items []structs.SalesOrderItemResponse) structs.SalesOrderResponse {

@@ -50,8 +50,8 @@ func orderListFilter(filter structs.SalesOrderFilter, channel *string) (w []stri
 		v = append(v, filter.DocumentNo)
 	}
 	if filter.CustomerName != "" {
-		w = append(w, "customer_name ILIKE ?")
-		v = append(v, "%"+filter.CustomerName+"%")
+		w = append(w, `customer_name ILIKE ? ESCAPE '\'`)
+		v = append(v, "%"+escapeLikePattern(filter.CustomerName)+"%")
 	}
 	if filter.Status != "" {
 		w = append(w, "status = ?")
@@ -83,6 +83,9 @@ func (r repo) ListOrders(ctx context.Context, filter structs.SalesOrderFilter, c
 			return []structs.SalesOrder{}, scanErr
 		}
 		orders = append(orders, order)
+	}
+	if err = rows.Err(); err != nil {
+		return []structs.SalesOrder{}, err
 	}
 
 	return orders, nil
@@ -232,6 +235,9 @@ func (r repo) ListReturns(ctx context.Context, filter structs.SalesReturnFilter)
 		}
 		returns = append(returns, salesReturn)
 	}
+	if err = rows.Err(); err != nil {
+		return []structs.SalesReturn{}, err
+	}
 
 	return returns, nil
 }
@@ -284,6 +290,15 @@ func nullableString(v string) interface{} {
 		return nil
 	}
 	return strings.TrimSpace(v)
+}
+
+func escapeLikePattern(s string) string {
+	replacer := strings.NewReplacer(
+		`\`, `\\`,
+		`%`, `\%`,
+		`_`, `\_`,
+	)
+	return replacer.Replace(s)
 }
 
 func nullableInt64Pointer(v *int64) interface{} {
