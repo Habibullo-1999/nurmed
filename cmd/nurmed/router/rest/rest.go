@@ -10,6 +10,7 @@ import (
 
 	authhandler "nurmed/cmd/nurmed/handlers/auth"
 	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
+	productshandler "nurmed/cmd/nurmed/handlers/products"
 	purchaseshandler "nurmed/cmd/nurmed/handlers/purchases"
 	saleshandler "nurmed/cmd/nurmed/handlers/sales"
 	"nurmed/cmd/nurmed/handlers/users"
@@ -32,6 +33,7 @@ type Params struct {
 	Logger       logger.ILogger
 	AuthService  auth.Service
 	AuthHandler  authhandler.Handler
+	Products     productshandler.Handler
 	Purchases    purchaseshandler.Handler
 	UserHandler  users.Handler
 	SalesHandler saleshandler.Handler
@@ -97,6 +99,16 @@ func NewRouter(params Params) {
 			purchasesAPI.GET("/registry", mw.PermissionMiddleware("purchases.registry.read"), params.Purchases.GetRegistry)
 			purchasesAPI.GET("/returns", mw.PermissionMiddleware("purchases.return.read"), params.Purchases.GetReturns)
 			purchasesAPI.POST("/returns", mw.PermissionMiddleware("purchases.return.create"), params.Purchases.CreateReturn)
+		}
+
+		productsAPI := api.Group("/products")
+		{
+			productsAPI.Use(
+				mw.AuthMiddleware(),
+				mw.ScopeMiddleware(),
+			)
+			productsAPI.GET("", mw.PermissionMiddleware("products.read"), params.Products.GetProducts)
+			productsAPI.POST("", mw.PermissionMiddleware("products.create"), params.Products.CreateProduct)
 		}
 	}
 
