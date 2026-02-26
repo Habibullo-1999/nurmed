@@ -10,6 +10,7 @@ import (
 
 	authhandler "nurmed/cmd/nurmed/handlers/auth"
 	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
+	saleshandler "nurmed/cmd/nurmed/handlers/sales"
 	"nurmed/cmd/nurmed/handlers/users"
 	"nurmed/internal/auth"
 	"nurmed/pkg/config"
@@ -25,12 +26,13 @@ var Module = fx.Options(
 
 type Params struct {
 	fx.In
-	Lifecycle fx.Lifecycle
-	Config    config.Config
-	Logger    logger.ILogger
-	AuthService auth.Service
-	AuthHandler authhandler.Handler
-	UserHandler users.Handler
+	Lifecycle    fx.Lifecycle
+	Config       config.Config
+	Logger       logger.ILogger
+	AuthService  auth.Service
+	AuthHandler  authhandler.Handler
+	UserHandler  users.Handler
+	SalesHandler saleshandler.Handler
 }
 
 func NewRouter(params Params) {
@@ -63,6 +65,23 @@ func NewRouter(params Params) {
 			)
 			usersAPI.GET("", mw.PermissionMiddleware("users.read"), params.UserHandler.GetUsers)
 			usersAPI.POST("", mw.PermissionMiddleware("users.create"), params.UserHandler.CreateUser)
+		}
+
+		salesAPI := api.Group("/sales")
+		{
+			salesAPI.Use(
+				mw.AuthMiddleware(),
+				mw.ScopeMiddleware(),
+			)
+			salesAPI.GET("/realizations", mw.PermissionMiddleware("sales.realization.read"), params.SalesHandler.GetRealizations)
+			salesAPI.POST("/realizations", mw.PermissionMiddleware("sales.realization.create"), params.SalesHandler.CreateRealization)
+			salesAPI.GET("/registry", mw.PermissionMiddleware("sales.registry.read"), params.SalesHandler.GetRegistry)
+			salesAPI.GET("/mobile", mw.PermissionMiddleware("sales.mobile.read"), params.SalesHandler.GetMobileSales)
+			salesAPI.POST("/mobile", mw.PermissionMiddleware("sales.mobile.create"), params.SalesHandler.CreateMobileSale)
+			salesAPI.GET("/pos", mw.PermissionMiddleware("sales.pos.read"), params.SalesHandler.GetPOSSales)
+			salesAPI.POST("/pos", mw.PermissionMiddleware("sales.pos.create"), params.SalesHandler.CreatePOSSale)
+			salesAPI.GET("/returns", mw.PermissionMiddleware("sales.return.read"), params.SalesHandler.GetReturns)
+			salesAPI.POST("/returns", mw.PermissionMiddleware("sales.return.create"), params.SalesHandler.CreateReturn)
 		}
 	}
 

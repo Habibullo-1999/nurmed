@@ -9,6 +9,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Users
+  - name: Sales
 paths:
   /health:
     get:
@@ -201,6 +202,417 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /sales/realizations:
+    get:
+      tags: [Sales]
+      summary: List realization sales
+      operationId: getSalesRealizations
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Realization sales list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SalesOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Sales]
+      summary: Create realization sale
+      operationId: createSalesRealization
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesCreateOrderRequest'
+      responses:
+        '200':
+          description: Realization sale created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/SalesOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sales/registry:
+    get:
+      tags: [Sales]
+      summary: Sales registry
+      operationId: getSalesRegistry
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sales registry list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SalesOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /sales/mobile:
+    get:
+      tags: [Sales]
+      summary: List mobile sales
+      operationId: getMobileSales
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mobile sales list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SalesOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Sales]
+      summary: Create mobile sale
+      operationId: createMobileSale
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesCreateOrderRequest'
+      responses:
+        '200':
+          description: Mobile sale created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/SalesOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sales/pos:
+    get:
+      tags: [Sales]
+      summary: List POS sales
+      operationId: getPOSSales
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: POS sales list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SalesOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Sales]
+      summary: Create POS sale
+      operationId: createPOSSale
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesCreateOrderRequest'
+      responses:
+        '200':
+          description: POS sale created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/SalesOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sales/returns:
+    get:
+      tags: [Sales]
+      summary: List returns
+      operationId: getSalesReturns
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: order_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Returns list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SalesReturnResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Sales]
+      summary: Create return
+      operationId: createSalesReturn
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesCreateReturnRequest'
+      responses:
+        '200':
+          description: Return created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/SalesReturnResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -357,6 +769,167 @@ components:
         lastLoginAt:
           type: string
           format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SalesOrderItemRequest:
+      type: object
+      required: [productName, quantity, price]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+        price:
+          type: number
+          format: double
+
+    SalesCreateOrderRequest:
+      type: object
+      required: [items]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        documentNo:
+          type: string
+        customerName:
+          type: string
+        currency:
+          type: string
+          example: UZS
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+          example: posted
+        soldAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesOrderItemRequest'
+
+    SalesOrderItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+        price:
+          type: number
+          format: double
+        amount:
+          type: number
+          format: double
+
+    SalesOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        channel:
+          type: string
+          enum: [realization, mobile, pos]
+        documentNo:
+          type: string
+        customerName:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        totalAmount:
+          type: number
+          format: double
+        itemCount:
+          type: integer
+        soldAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesOrderItemResponse'
+
+    SalesCreateReturnRequest:
+      type: object
+      required: [orderId, totalAmount]
+      properties:
+        orderId:
+          type: integer
+          format: int64
+        companyId:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        totalAmount:
+          type: number
+          format: double
+        returnedAt:
+          type: string
+          format: date-time
+
+    SalesReturnResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderId:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        totalAmount:
+          type: number
+          format: double
+        returnedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
