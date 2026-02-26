@@ -10,6 +10,7 @@ import (
 
 	authhandler "nurmed/cmd/nurmed/handlers/auth"
 	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
+	purchaseshandler "nurmed/cmd/nurmed/handlers/purchases"
 	saleshandler "nurmed/cmd/nurmed/handlers/sales"
 	"nurmed/cmd/nurmed/handlers/users"
 	"nurmed/internal/auth"
@@ -31,6 +32,7 @@ type Params struct {
 	Logger       logger.ILogger
 	AuthService  auth.Service
 	AuthHandler  authhandler.Handler
+	Purchases    purchaseshandler.Handler
 	UserHandler  users.Handler
 	SalesHandler saleshandler.Handler
 }
@@ -82,6 +84,19 @@ func NewRouter(params Params) {
 			salesAPI.POST("/pos", mw.PermissionMiddleware("sales.pos.create"), params.SalesHandler.CreatePOSSale)
 			salesAPI.GET("/returns", mw.PermissionMiddleware("sales.return.read"), params.SalesHandler.GetReturns)
 			salesAPI.POST("/returns", mw.PermissionMiddleware("sales.return.create"), params.SalesHandler.CreateReturn)
+		}
+
+		purchasesAPI := api.Group("/purchases")
+		{
+			purchasesAPI.Use(
+				mw.AuthMiddleware(),
+				mw.ScopeMiddleware(),
+			)
+			purchasesAPI.GET("/acquisitions", mw.PermissionMiddleware("purchases.acquisition.read"), params.Purchases.GetAcquisitions)
+			purchasesAPI.POST("/acquisitions", mw.PermissionMiddleware("purchases.acquisition.create"), params.Purchases.CreateAcquisition)
+			purchasesAPI.GET("/registry", mw.PermissionMiddleware("purchases.registry.read"), params.Purchases.GetRegistry)
+			purchasesAPI.GET("/returns", mw.PermissionMiddleware("purchases.return.read"), params.Purchases.GetReturns)
+			purchasesAPI.POST("/returns", mw.PermissionMiddleware("purchases.return.create"), params.Purchases.CreateReturn)
 		}
 	}
 
