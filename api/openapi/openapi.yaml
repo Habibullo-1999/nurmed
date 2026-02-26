@@ -9,6 +9,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Users
+  - name: Products
   - name: Sales
   - name: Purchases
 paths:
@@ -194,6 +195,109 @@ paths:
                     properties:
                       payload:
                         $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      operationId: getProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-Company-ID
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sku
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: barcode
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive]
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Products list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Products]
+      summary: Create product
+      operationId: createProduct
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/ProductResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1025,6 +1129,69 @@ components:
         lastLoginAt:
           type: string
           format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      required: [name]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        sku:
+          type: string
+        barcode:
+          type: string
+        unit:
+          type: string
+          example: pcs
+        purchasePrice:
+          type: number
+          format: double
+        salePrice:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+
+    ProductResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        name:
+          type: string
+        sku:
+          type: string
+        barcode:
+          type: string
+        unit:
+          type: string
+        purchasePrice:
+          type: number
+          format: double
+        salePrice:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [active, inactive]
+        createdBy:
+          type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
