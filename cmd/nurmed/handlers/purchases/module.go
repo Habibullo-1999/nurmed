@@ -197,7 +197,7 @@ func (h *handler) createOrder(c *gin.Context, createFn func(ctx context.Context,
 			response = responses.BadRequest
 		case errors.As(err, &pgErr) && pgErr.Code == "23505":
 			response = responses.Conflict
-		case errors.As(err, &pgErr) && pgErr.Code == "23514":
+		case errors.As(err, &pgErr) && (pgErr.Code == "23503" || pgErr.Code == "23514"):
 			response = responses.BadRequest
 		default:
 			h.logger.Error(c.Request.Context(), "handlers/purchases/module.go err from createFn()", zap.Error(err))
