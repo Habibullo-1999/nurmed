@@ -23,6 +23,7 @@ WORKDIR /app
 COPY --from=builder /src/nurmed /app/nurmed
 COPY configs /app/configs
 COPY migrations /app/migrations
+copy api /app/api
 
 ENV GIN_MODE=release
 
