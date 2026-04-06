@@ -1,12 +1,11 @@
 name: Deploy
 
-# Ручной запуск с выбором ветки
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to deploy'
-        default: 'main'
+        description: Branch to deploy
+        default: main
         required: true
 
 jobs:
@@ -16,15 +15,15 @@ jobs:
     steps:
       # 1. Клонируем код (для тестов перед деплоем)
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
 
       # 2. Сборка и тесты Go
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: 1.21
 
       - name: Install dependencies
         run: go mod tidy
@@ -34,17 +33,16 @@ jobs:
 
       # 3. Деплой на сервер через SSH
       - name: Deploy server
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
-          username: ${{secrets.SERVER_USER}}
+          username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           script: |
             BRANCH="${{ github.event.inputs.branch }}"
-            cd /opt/app || { echo "Directory /opt/app not found"; exit 1; }
-            
-            # Получаем последнюю версию выбранной ветки
+            cd /opt/app || exit 1
+
             git fetch origin $BRANCH
             git reset --hard origin/$BRANCH
 
