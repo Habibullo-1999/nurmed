@@ -37,9 +37,8 @@ jobs:
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SERVER_IP }}
-          username: ${{secrets.SERVER_USER}}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-
+          username: deploy
+          key: ${{ secrets.SSH_KEY }}
           script: |
             BRANCH="${{ github.event.inputs.branch }}"
             cd /opt/app || { echo "Directory /opt/app not found"; exit 1; }
