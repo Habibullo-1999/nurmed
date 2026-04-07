@@ -50,11 +50,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           script: |
+            git config --global --add safe.directory /opt/app/backend/nurmed
+            
             BRANCH="${{ github.event.inputs.branch }}"
-            cd /opt/app || exit 1
+            cd /opt/app/backend/nurmed || exit 1
 
             git fetch origin $BRANCH
             git reset --hard origin/$BRANCH
+            
+            cd ../.. || exit 1
 
             echo "Deploying branch: $BRANCH"
             echo "Last commits:"

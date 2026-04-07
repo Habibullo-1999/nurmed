@@ -1,12 +1,12 @@
 {
   "server": {
-    "host": "http://127.0.0.1",
+    "host": "0.0.0.0",
     "port": ":9050",
     "version": "v1"
   },
   "database": {
-    "dns": "postgres://nurmed:nurmed@localhost:5436/nurmed?sslmode=disable",
-    "migration": "postgres://nurmed:nurmed@localhost:5436/nurmed?sslmode=disable"
+    "dns": "postgres://app:strongpassword@postgres:5432/app?sslmode=disable",
+    "migration": "postgres://app:strongpassword@postgres:5432/app?sslmode=disable"
   },
   "auth": {
     "jwtSecret": "replace-this-secret-with-a-strong-random-value",
@@ -17,5 +17,9 @@
     "refreshCookieName": "refresh_token",
     "secureCookies": true,
     "loginRateLimitPerMinute": 20
+  },
+  "redis": {
+    "host": "redis",
+    "port": 6379
   }
 }
