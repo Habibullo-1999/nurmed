@@ -33,30 +33,25 @@ jobs:
       - name: Run tests
         run: go test ./... -v
 
-      # Debug: проверить что секреты передаются
-      - name: Debug secrets
-        run: |
-          if [ -z "${{ secrets.SERVER_IP }}" ]; then
-            echo "ERROR: SERVER_IP is EMPTY"
-          else
-            echo "OK: SERVER_IP is set (length: ${#SERVER_IP})"
-          fi
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-
       # 3. Деплой на сервер через SSH
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
-          username: ${{secrets.SERVER_USER}}
+          username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           script: |
             BRANCH="${{ github.event.inputs.branch }}"
-            cd /opt/app || { echo "Directory /opt/app not found"; exit 1; }
-            
-            # Получаем последнюю версию выбранной ветки
+
+            # Добавляем github.com в known_hosts, чтобы git fetch не падал
+            mkdir -p ~/.ssh
+            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+            # Обновляем код репозитория
+            git config --global --add safe.directory /opt/app/backend/nurmed
+            cd /opt/app/backend/nurmed || { echo "Directory not found"; exit 1; }
+
             git fetch origin $BRANCH
             git reset --hard origin/$BRANCH
 
@@ -64,5 +59,7 @@ jobs:
             echo "Last commits:"
             git log -3 --oneline
 
+            # Запускаем docker compose из директории с docker-compose.yml
+            cd /opt/app
             docker compose down
             docker compose up -d --build
