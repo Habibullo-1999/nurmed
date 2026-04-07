@@ -32,6 +32,17 @@ jobs:
       - name: Run tests
         run: go test ./... -v
 
+      # Debug: проверить что секреты передаются
+      - name: Debug secrets
+        run: |
+          if [ -z "${{ secrets.SERVER_IP }}" ]; then
+            echo "ERROR: SERVER_IP is EMPTY"
+          else
+            echo "OK: SERVER_IP is set (length: ${#SERVER_IP})"
+          fi
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+
       # 3. Деплой на сервер через SSH
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.3
