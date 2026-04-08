@@ -122,6 +122,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response'
 
+  /auth/check-device:
+    post:
+      tags: [Auth]
+      summary: Check device for verification
+      operationId: checkDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckDeviceRequest'
+      responses:
+        '200':
+          description: Device check response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/CheckDeviceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/verify-device:
+    post:
+      tags: [Auth]
+      summary: Verify device with code
+      operationId: verifyDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyDeviceRequest'
+      responses:
+        '200':
+          description: Device verified
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /users:
     get:
       tags: [Users]
@@ -1040,6 +1094,71 @@ components:
       type: object
       properties:
         refreshToken:
+          type: string
+
+    CheckDeviceRequest:
+      type: object
+      required: [identifier]
+      properties:
+        identifier:
+          type: string
+          description: Username, email or phone number
+
+    CheckDeviceResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: Unique device identifier
+        requiresVerification:
+          type: boolean
+          description: Whether verification code is required
+        message:
+          type: string
+          description: Response message
+        deviceInfo:
+          $ref: '#/components/schemas/DeviceInfo'
+
+    DeviceInfo:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: Unique device identifier
+        deviceName:
+          type: string
+          description: Device name
+        deviceType:
+          type: string
+          description: Device type (mobile, web, desktop)
+        osType:
+          type: string
+          description: Operating system (iOS, Android, Windows, macOS, Linux)
+        osVersion:
+          type: string
+          description: Operating system version
+        appVersion:
+          type: string
+          description: Application version
+        lastUsedAt:
+          type: string
+          format: date-time
+          description: Last used timestamp
+        isVerified:
+          type: boolean
+          description: Whether device is verified
+        createdAt:
+          type: string
+          format: date-time
+          description: Device creation timestamp
+
+    VerifyDeviceRequest:
+      type: object
+      required: [identifier, verificationCode]
+      properties:
+        identifier:
+          type: string
+        verificationCode:
           type: string
 
     AuthResponse:

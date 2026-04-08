@@ -31,6 +31,8 @@ type Handler interface {
 	Login(c *gin.Context)
 	Refresh(c *gin.Context)
 	Logout(c *gin.Context)
+	CheckDevice(c *gin.Context)
+	VerifyDevice(c *gin.Context)
 }
 
 func New(p Params) Handler {
@@ -64,6 +66,15 @@ func (h *handler) Login(c *gin.Context) {
 	}
 
 	h.setRefreshCookie(c, tokens.RefreshToken)
+	if pendingToken := readCookieValue(c, h.authSvs.DevicePendingCookieName()); pendingToken != "" {
+		trustedToken, trustErr := h.authSvs.TrustPendingDevice(c.Request.Context(), pendingToken)
+		if trustErr != nil {
+			h.logger.Warning(c.Request.Context(), "handlers/auth trust pending device failed", zap.Error(trustErr))
+		} else if trustedToken != "" {
+			h.setDeviceTrustCookie(c, trustedToken)
+			h.clearDevicePendingCookie(c)
+		}
+	}
 
 	response = responses.Success
 	response.Payload = structs.AuthResponse{
@@ -145,11 +156,30 @@ func (h *handler) Logout(c *gin.Context) {
 }
 
 func (h *handler) setRefreshCookie(c *gin.Context, token string) {
-	maxAge := int(h.authSvs.RefreshTokenTTL().Seconds())
+	h.setCookie(c, h.authSvs.RefreshCookieName(), token, int(h.authSvs.RefreshTokenTTL().Seconds()))
+}
+
+func (h *handler) clearRefreshCookie(c *gin.Context) {
+	h.clearCookie(c, h.authSvs.RefreshCookieName())
+}
+
+func (h *handler) setDeviceTrustCookie(c *gin.Context, token string) {
+	h.setCookie(c, h.authSvs.DeviceTrustCookieName(), token, int(h.authSvs.DeviceTrustCookieTTL().Seconds()))
+}
+
+func (h *handler) setDevicePendingCookie(c *gin.Context, token string) {
+	h.setCookie(c, h.authSvs.DevicePendingCookieName(), token, int(h.authSvs.DevicePendingCookieTTL().Seconds()))
+}
+
+func (h *handler) clearDevicePendingCookie(c *gin.Context) {
+	h.clearCookie(c, h.authSvs.DevicePendingCookieName())
+}
+
+func (h *handler) setCookie(c *gin.Context, name, value string, maxAge int) {
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(
-		h.authSvs.RefreshCookieName(),
-		token,
+		name,
+		value,
 		maxAge,
 		"/",
 		h.authSvs.RefreshCookieDomain(),
@@ -158,17 +188,8 @@ func (h *handler) setRefreshCookie(c *gin.Context, token string) {
 	)
 }
 
-func (h *handler) clearRefreshCookie(c *gin.Context) {
-	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie(
-		h.authSvs.RefreshCookieName(),
-		"",
-		-1,
-		"/",
-		h.authSvs.RefreshCookieDomain(),
-		h.authSvs.RefreshCookieSecure(),
-		true,
-	)
+func (h *handler) clearCookie(c *gin.Context, name string) {
+	h.setCookie(c, name, "", -1)
 }
 
 func readAuthMeta(c *gin.Context) structs.AuthMeta {
@@ -183,6 +204,11 @@ func readRefreshToken(c *gin.Context, cookieName string) string {
 		return token
 	}
 	return c.GetHeader("X-Refresh-Token")
+}
+
+func readCookieValue(c *gin.Context, cookieName string) string {
+	value, _ := c.Cookie(cookieName)
+	return value
 }
 
 func mapAuthErrorToResponse(err error) structs.Response {

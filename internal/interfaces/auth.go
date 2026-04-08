@@ -19,4 +19,10 @@ type AuthRepo interface {
 	GetPermissionAssignments(ctx context.Context, userID int64) ([]structs.PermissionAssignment, error)
 	GetUserScopes(ctx context.Context, userID int64) ([]structs.RoleScope, error)
 	CreateAuditLog(ctx context.Context, entry structs.AuditLog) error
+	GetTrustedDeviceByPendingTokenHash(ctx context.Context, pendingTokenHash string) (*structs.TrustedDevice, error)
+	GetTrustedDeviceByTrustedTokenHash(ctx context.Context, trustedTokenHash string) (*structs.TrustedDevice, error)
+	UpsertTrustedDevicePending(ctx context.Context, device *structs.TrustedDevice) error
+	SetTrustedDeviceVerificationChallenge(ctx context.Context, deviceID int64, target string, codeHash string, expiresAt time.Time) error
+	MarkTrustedDeviceVerified(ctx context.Context, deviceID int64, trustedTokenHash string, verifiedAt time.Time) error
+	TouchTrustedDevice(ctx context.Context, deviceID int64, seenAt time.Time) error
 }
