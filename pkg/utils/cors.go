@@ -10,10 +10,16 @@ import (
 
 func AddCors(router http.Handler, cnf config.Config) http.Handler {
 	return cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodDelete,
+			http.MethodOptions,
+		},
 		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
+		AllowCredentials: false,
 		MaxAge:           300,
 	}).Handler(router)
 }
