@@ -15,7 +15,7 @@
     "maxFailedAttempts": 5,
     "lockDurationMinutes": 15,
     "refreshCookieName": "refresh_token",
-    "secureCookies": true,
+    "secureCookies": false,
     "loginRateLimitPerMinute": 20
   },
   "redis": {
