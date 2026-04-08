@@ -60,6 +60,8 @@ func NewRouter(params Params) {
 			authAPI.POST("/login", mw.LoginRateLimitMiddleware(), params.AuthHandler.Login)
 			authAPI.POST("/refresh", params.AuthHandler.Refresh)
 			authAPI.POST("/logout", params.AuthHandler.Logout)
+			authAPI.POST("/check-device", params.AuthHandler.CheckDevice)
+			authAPI.POST("/verify-device", params.AuthHandler.VerifyDevice)
 		}
 		usersAPI := api.Group("/users")
 		{

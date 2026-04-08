@@ -100,3 +100,51 @@ type AuditLog struct {
 	Meta       map[string]interface{}
 	CreatedAt  time.Time
 }
+
+type TrustedDevice struct {
+	ID                 int64
+	FingerprintHash    string
+	BrowserName        string
+	BrowserVersion     string
+	OSName             string
+	OSVersion          string
+	DeviceName         string
+	PendingTokenHash   string
+	PendingExpiresAt   *time.Time
+	VerifyTarget       string
+	VerifyCodeHash     string
+	VerifyExpiresAt    *time.Time
+	TrustedTokenHash   string
+	TrustedAt          *time.Time
+	LastSeenAt         *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+type DeviceCheckRequest struct {
+	DeviceInfo DeviceInfo `json:"deviceInfo" binding:"required"`
+}
+
+type DeviceInfo struct {
+	BrowserName    string `json:"browserName"`
+	BrowserVersion string `json:"browserVersion"`
+	OSName         string `json:"osName"`
+	OSVersion      string `json:"osVersion"`
+	DeviceName     string `json:"deviceName"`
+}
+
+type DeviceCheckResponse struct {
+	Status string `json:"status"` // "verified" | "verification_required"
+}
+
+type DeviceVerificationRequest struct {
+	Identifier       string     `json:"identifier" binding:"required"`
+	VerificationCode string     `json:"verificationCode,omitempty"`
+	DeviceInfo       DeviceInfo `json:"deviceInfo" binding:"required"`
+}
+
+type DeviceVerificationResponse struct {
+	Verified bool   `json:"verified"`
+	CodeSent bool   `json:"codeSent,omitempty"`
+	Message  string `json:"message"`
+}

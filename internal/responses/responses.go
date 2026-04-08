@@ -9,6 +9,10 @@ func newResponse(code int, message string) structs.Response {
 	}
 }
 
+func NewResponse(code int, message string) structs.Response {
+	return newResponse(code, message)
+}
+
 // Response code
 const (
 	OkCode           = 200

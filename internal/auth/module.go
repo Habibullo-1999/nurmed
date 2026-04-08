@@ -47,6 +47,13 @@ type Service interface {
 	RefreshCookieSecure() bool
 	RefreshCookieDomain() string
 	RefreshTokenTTL() time.Duration
+	DeviceTrustCookieName() string
+	DevicePendingCookieName() string
+	DeviceTrustCookieTTL() time.Duration
+	DevicePendingCookieTTL() time.Duration
+	CheckDevice(ctx context.Context, deviceInfo structs.DeviceInfo, trustedToken string) (structs.DeviceCheckResponse, string, error)
+	VerifyDevice(ctx context.Context, request structs.DeviceVerificationRequest, pendingToken string) (string, bool, error)
+	TrustPendingDevice(ctx context.Context, pendingToken string) (string, error)
 }
 
 type service struct {
@@ -60,6 +67,11 @@ type service struct {
 	refreshCookieName   string
 	refreshCookieSecure bool
 	refreshCookieDomain string
+	deviceTrustCookieName   string
+	devicePendingCookieName string
+	deviceTrustTTL          time.Duration
+	devicePendingTTL        time.Duration
+	deviceCodeTTL           time.Duration
 }
 
 func New(p Params) Service {
@@ -99,6 +111,31 @@ func New(p Params) Service {
 		refreshCookieSecure = p.Config.GetBool("auth.secureCookies")
 	}
 
+	deviceTrustCookieName := p.Config.GetString("auth.deviceTrustCookieName")
+	if deviceTrustCookieName == "" {
+		deviceTrustCookieName = "trusted_device"
+	}
+
+	devicePendingCookieName := p.Config.GetString("auth.devicePendingCookieName")
+	if devicePendingCookieName == "" {
+		devicePendingCookieName = "pending_device"
+	}
+
+	deviceTrustDays := p.Config.GetInt("auth.deviceTrustTtlDays")
+	if deviceTrustDays <= 0 {
+		deviceTrustDays = 180
+	}
+
+	devicePendingMinutes := p.Config.GetInt("auth.devicePendingTtlMinutes")
+	if devicePendingMinutes <= 0 {
+		devicePendingMinutes = 30
+	}
+
+	deviceCodeMinutes := p.Config.GetInt("auth.deviceCodeTtlMinutes")
+	if deviceCodeMinutes <= 0 {
+		deviceCodeMinutes = 10
+	}
+
 	return &service{
 		logger:              p.Logger,
 		repo:                p.AuthRepo,
@@ -110,6 +147,11 @@ func New(p Params) Service {
 		refreshCookieName:   refreshCookieName,
 		refreshCookieSecure: refreshCookieSecure,
 		refreshCookieDomain: p.Config.GetString("auth.cookieDomain"),
+		deviceTrustCookieName:   deviceTrustCookieName,
+		devicePendingCookieName: devicePendingCookieName,
+		deviceTrustTTL:          time.Duration(deviceTrustDays) * 24 * time.Hour,
+		devicePendingTTL:        time.Duration(devicePendingMinutes) * time.Minute,
+		deviceCodeTTL:           time.Duration(deviceCodeMinutes) * time.Minute,
 	}
 }
 
@@ -139,6 +181,22 @@ func (s *service) RefreshCookieDomain() string {
 
 func (s *service) RefreshTokenTTL() time.Duration {
 	return s.refreshTTL
+}
+
+func (s *service) DeviceTrustCookieName() string {
+	return s.deviceTrustCookieName
+}
+
+func (s *service) DevicePendingCookieName() string {
+	return s.devicePendingCookieName
+}
+
+func (s *service) DeviceTrustCookieTTL() time.Duration {
+	return s.deviceTrustTTL
+}
+
+func (s *service) DevicePendingCookieTTL() time.Duration {
+	return s.devicePendingTTL
 }
 
 func (s *service) Login(ctx context.Context, request structs.LoginRequest, meta structs.AuthMeta) (structs.AuthTokens, error) {

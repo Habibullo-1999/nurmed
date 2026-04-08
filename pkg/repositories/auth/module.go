@@ -399,3 +399,217 @@ func (r *repo) scanUser(row pgx.Row) (structs.User, error) {
 
 	return user, nil
 }
+
+
+func (r *repo) GetTrustedDeviceByPendingTokenHash(ctx context.Context, pendingTokenHash string) (*structs.TrustedDevice, error) {
+	query := `SELECT
+		id,
+		fingerprint_hash,
+		browser_name,
+		browser_version,
+		os_name,
+		os_version,
+		device_name,
+		pending_token_hash,
+		pending_expires_at,
+		verify_target,
+		verify_code_hash,
+		verify_expires_at,
+		trusted_token_hash,
+		trusted_at,
+		last_seen_at,
+		created_at,
+		updated_at
+	FROM trusted_devices
+	WHERE pending_token_hash = $1
+	LIMIT 1;`
+
+	return r.scanTrustedDevice(r.db.QueryRow(ctx, query, pendingTokenHash))
+}
+
+func (r *repo) GetTrustedDeviceByTrustedTokenHash(ctx context.Context, trustedTokenHash string) (*structs.TrustedDevice, error) {
+	query := `SELECT
+		id,
+		fingerprint_hash,
+		browser_name,
+		browser_version,
+		os_name,
+		os_version,
+		device_name,
+		pending_token_hash,
+		pending_expires_at,
+		verify_target,
+		verify_code_hash,
+		verify_expires_at,
+		trusted_token_hash,
+		trusted_at,
+		last_seen_at,
+		created_at,
+		updated_at
+	FROM trusted_devices
+	WHERE trusted_token_hash = $1
+	LIMIT 1;`
+
+	return r.scanTrustedDevice(r.db.QueryRow(ctx, query, trustedTokenHash))
+}
+
+func (r *repo) UpsertTrustedDevicePending(ctx context.Context, device *structs.TrustedDevice) error {
+	query := `INSERT INTO trusted_devices (
+		fingerprint_hash,
+		browser_name,
+		browser_version,
+		os_name,
+		os_version,
+		device_name,
+		pending_token_hash,
+		pending_expires_at,
+		updated_at
+	)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+	ON CONFLICT (fingerprint_hash) DO UPDATE SET
+		browser_name = EXCLUDED.browser_name,
+		browser_version = EXCLUDED.browser_version,
+		os_name = EXCLUDED.os_name,
+		os_version = EXCLUDED.os_version,
+		device_name = EXCLUDED.device_name,
+		pending_token_hash = EXCLUDED.pending_token_hash,
+		pending_expires_at = EXCLUDED.pending_expires_at,
+		verify_target = NULL,
+		verify_code_hash = NULL,
+		verify_expires_at = NULL,
+		updated_at = NOW()
+	RETURNING id, created_at, updated_at;`
+
+	return r.db.QueryRow(ctx, query,
+		device.FingerprintHash,
+		device.BrowserName,
+		device.BrowserVersion,
+		device.OSName,
+		device.OSVersion,
+		device.DeviceName,
+		device.PendingTokenHash,
+		device.PendingExpiresAt,
+	).Scan(&device.ID, &device.CreatedAt, &device.UpdatedAt)
+}
+
+func (r *repo) SetTrustedDeviceVerificationChallenge(ctx context.Context, deviceID int64, target string, codeHash string, expiresAt time.Time) error {
+	query := `UPDATE trusted_devices
+	SET verify_target = $2,
+		verify_code_hash = $3,
+		verify_expires_at = $4,
+		updated_at = NOW()
+	WHERE id = $1;`
+
+	_, err := r.db.Exec(ctx, query, deviceID, target, codeHash, expiresAt)
+	return err
+}
+
+func (r *repo) MarkTrustedDeviceVerified(ctx context.Context, deviceID int64, trustedTokenHash string, verifiedAt time.Time) error {
+	query := `UPDATE trusted_devices
+	SET trusted_token_hash = $2,
+		trusted_at = $3,
+		last_seen_at = $3,
+		pending_token_hash = NULL,
+		pending_expires_at = NULL,
+		verify_target = NULL,
+		verify_code_hash = NULL,
+		verify_expires_at = NULL,
+		updated_at = $3
+	WHERE id = $1;`
+
+	_, err := r.db.Exec(ctx, query, deviceID, trustedTokenHash, verifiedAt)
+	return err
+}
+
+func (r *repo) TouchTrustedDevice(ctx context.Context, deviceID int64, seenAt time.Time) error {
+	query := `UPDATE trusted_devices
+	SET last_seen_at = $2,
+		updated_at = $2
+	WHERE id = $1;`
+
+	_, err := r.db.Exec(ctx, query, deviceID, seenAt)
+	return err
+}
+
+func (r *repo) scanTrustedDevice(row pgx.Row) (*structs.TrustedDevice, error) {
+	var (
+		device                               structs.TrustedDevice
+		browserName, browserVersion          sql.NullString
+		osName, osVersion, deviceName        sql.NullString
+		pendingTokenHash, trustedTokenHash   sql.NullString
+		verifyTarget, verifyCodeHash         sql.NullString
+		pendingExpiresAt, verifyExpiresAt    sql.NullTime
+		trustedAt                            sql.NullTime
+		lastSeenAt                           sql.NullTime
+	)
+
+	err := row.Scan(
+		&device.ID,
+		&device.FingerprintHash,
+		&browserName,
+		&browserVersion,
+		&osName,
+		&osVersion,
+		&deviceName,
+		&pendingTokenHash,
+		&pendingExpiresAt,
+		&verifyTarget,
+		&verifyCodeHash,
+		&verifyExpiresAt,
+		&trustedTokenHash,
+		&trustedAt,
+		&lastSeenAt,
+		&device.CreatedAt,
+		&device.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if browserName.Valid {
+		device.BrowserName = browserName.String
+	}
+	if browserVersion.Valid {
+		device.BrowserVersion = browserVersion.String
+	}
+	if osName.Valid {
+		device.OSName = osName.String
+	}
+	if osVersion.Valid {
+		device.OSVersion = osVersion.String
+	}
+	if deviceName.Valid {
+		device.DeviceName = deviceName.String
+	}
+	if pendingTokenHash.Valid {
+		device.PendingTokenHash = pendingTokenHash.String
+	}
+	if verifyTarget.Valid {
+		device.VerifyTarget = verifyTarget.String
+	}
+	if verifyCodeHash.Valid {
+		device.VerifyCodeHash = verifyCodeHash.String
+	}
+	if trustedTokenHash.Valid {
+		device.TrustedTokenHash = trustedTokenHash.String
+	}
+	if pendingExpiresAt.Valid {
+		value := pendingExpiresAt.Time
+		device.PendingExpiresAt = &value
+	}
+	if trustedAt.Valid {
+		value := trustedAt.Time
+		device.TrustedAt = &value
+	}
+	if verifyExpiresAt.Valid {
+		value := verifyExpiresAt.Time
+		device.VerifyExpiresAt = &value
+	}
+	if lastSeenAt.Valid {
+		value := lastSeenAt.Time
+		device.LastSeenAt = &value
+	}
+
+	return &device, nil
+}
+
