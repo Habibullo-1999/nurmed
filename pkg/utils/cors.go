@@ -9,13 +9,11 @@ import (
 )
 
 func AddCors(router http.Handler, cnf config.Config) http.Handler {
-	// return cors.New(cors.Options{
-	//	AllowedOrigins:   cnf.GetStringSlice("cors.allowedOrigins"),
-	//	AllowedMethods:   []string{http.MethodDelete, http.MethodGet, http.MethodPost, http.MethodPut},
-	//	AllowedHeaders:   []string{"*"},
-	//	MaxAge:           10,
-	//	AllowCredentials: true,
-	// }).Handler(router)
-
-	return cors.AllowAll().Handler(router)
+	return cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler(router)
 }
