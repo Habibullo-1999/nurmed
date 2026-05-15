@@ -8,6 +8,7 @@ import (
 	"nurmed/pkg/repositories/purchases"
 	"nurmed/pkg/repositories/sales"
 	"nurmed/pkg/repositories/users"
+	"nurmed/pkg/repositories/warehouse"
 )
 
 var Module = fx.Options(
@@ -16,4 +17,5 @@ var Module = fx.Options(
 	purchases.Module,
 	sales.Module,
 	users.Module,
+	warehouse.Module,
 )
