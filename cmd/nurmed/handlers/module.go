@@ -8,6 +8,7 @@ import (
 	"nurmed/cmd/nurmed/handlers/purchases"
 	"nurmed/cmd/nurmed/handlers/sales"
 	"nurmed/cmd/nurmed/handlers/users"
+	"nurmed/cmd/nurmed/handlers/warehouse"
 )
 
 var Module = fx.Options(
@@ -16,4 +17,5 @@ var Module = fx.Options(
 	purchases.Module,
 	sales.Module,
 	users.Module,
+	warehouse.Module,
 )

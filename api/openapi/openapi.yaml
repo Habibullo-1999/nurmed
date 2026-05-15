@@ -12,6 +12,7 @@ tags:
   - name: Products
   - name: Sales
   - name: Purchases
+  - name: Warehouse
 paths:
   /health:
     get:
@@ -1059,6 +1060,38 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Response'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+
+  parameters:
+    XCompanyID:
+      in: header
+      name: X-Company-ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+    Limit:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 200
+    Offset:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
 
   schemas:
     Response:
@@ -1636,3 +1669,910 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+  # ── Warehouse ───────────────────────────────────────────────────────────────
+
+  /warehouse/warehouses:
+    get:
+      tags: [Warehouse]
+      summary: List warehouses for the authenticated company
+      operationId: getWarehouses
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+      responses:
+        '200':
+          description: List of warehouses
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WarehouseResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /warehouse/stock:
+    get:
+      tags: [Warehouse]
+      summary: Get product stock remainders
+      operationId: getWarehouseStock
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: warehouse_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Filter by specific warehouse
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+          description: Search by product name (partial), exact barcode, or exact SKU
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Stock list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WarehouseStockResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /warehouse/inventories:
+    get:
+      tags: [Warehouse]
+      summary: List inventory orders
+      operationId: getInventories
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: warehouse_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: date_from
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - in: query
+          name: date_to
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+          description: Search by document number
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Inventory list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InventoryOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Warehouse]
+      summary: Create a new inventory order (draft)
+      operationId: createInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryOrderRequest'
+      responses:
+        '200':
+          description: Inventory order created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/InventoryOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /warehouse/inventories/{id}/post:
+    put:
+      tags: [Warehouse]
+      summary: Post (confirm) an inventory order — updates warehouse stock to actual quantities
+      operationId: postInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Inventory order posted, stock updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/InventoryOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /warehouse/transfers:
+    get:
+      tags: [Warehouse]
+      summary: List transfer orders
+      operationId: getTransfers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: from_warehouse_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: to_warehouse_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: date_from
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - in: query
+          name: date_to
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Transfer list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TransferOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Warehouse]
+      summary: Create a new transfer order (draft)
+      operationId: createTransfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferOrderRequest'
+      responses:
+        '200':
+          description: Transfer order created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/TransferOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /warehouse/transfers/{id}/post:
+    put:
+      tags: [Warehouse]
+      summary: Post (confirm) a transfer — moves stock from source to destination warehouse
+      operationId: postTransfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transfer posted, stock moved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/TransferOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /warehouse/writeoffs:
+    get:
+      tags: [Warehouse]
+      summary: List write-off orders
+      operationId: getWriteoffs
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: warehouse_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [draft, posted, cancelled]
+        - in: query
+          name: date_from
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - in: query
+          name: date_to
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Write-off list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WriteoffOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Warehouse]
+      summary: Create a new write-off order (draft)
+      operationId: createWriteoff
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWriteoffOrderRequest'
+      responses:
+        '200':
+          description: Write-off order created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/WriteoffOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /warehouse/writeoffs/{id}/post:
+    put:
+      tags: [Warehouse]
+      summary: Post (confirm) a write-off — deducts quantities from warehouse stock
+      operationId: postWriteoff
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/XCompanyID'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Write-off posted, stock deducted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/WriteoffOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    # ── Warehouse schemas ──────────────────────────────────────────────────────
+
+    WarehouseResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: Основной склад
+        address:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WarehouseStockResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        warehouseId:
+          type: integer
+          format: int64
+        warehouseName:
+          type: string
+          example: Основной склад
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        sku:
+          type: string
+        barcode:
+          type: string
+        unit:
+          type: string
+          example: шт
+        quantity:
+          type: number
+          format: double
+          example: 10.5
+        costPrice:
+          type: number
+          format: double
+          description: Unit cost price (purchase price)
+          example: 21.00
+        totalCostPrice:
+          type: number
+          format: double
+          description: quantity × costPrice
+          example: 220.50
+
+    # ── Inventory schemas ──────────────────────────────────────────────────────
+
+    InventoryItemRequest:
+      type: object
+      required: [productName]
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: Link to existing product (optional)
+        productName:
+          type: string
+        expectedQty:
+          type: number
+          format: double
+          description: Quantity expected according to the system (pre-filled from stock)
+          default: 0
+        actualQty:
+          type: number
+          format: double
+          description: Quantity actually counted during inventory
+          default: 0
+        costPrice:
+          type: number
+          format: double
+          description: Unit cost price used for surplus/deficit calculation
+          default: 0
+
+    CreateInventoryOrderRequest:
+      type: object
+      required: [warehouseId, items]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        warehouseId:
+          type: integer
+          format: int64
+        documentNo:
+          type: string
+          description: Document number; auto-generated if omitted
+        note:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemRequest'
+
+    InventoryOrderItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        expectedQty:
+          type: number
+          format: double
+        actualQty:
+          type: number
+          format: double
+        costPrice:
+          type: number
+          format: double
+
+    InventoryOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        warehouseId:
+          type: integer
+          format: int64
+        warehouseName:
+          type: string
+        documentNo:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        surplusDeficit:
+          type: number
+          format: double
+          description: "SUM((actualQty - expectedQty) × costPrice). Positive = surplus, negative = deficit"
+        note:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        createdByName:
+          type: string
+        updatedBy:
+          type: integer
+          format: int64
+        updatedByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryOrderItemResponse'
+
+    # ── Transfer schemas ───────────────────────────────────────────────────────
+
+    TransferItemRequest:
+      type: object
+      required: [productName, quantity]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+          minimum: 0.001
+        costPrice:
+          type: number
+          format: double
+          default: 0
+
+    CreateTransferOrderRequest:
+      type: object
+      required: [fromWarehouseId, toWarehouseId, items]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        fromWarehouseId:
+          type: integer
+          format: int64
+          description: Source warehouse ID
+        toWarehouseId:
+          type: integer
+          format: int64
+          description: Destination warehouse ID (must differ from fromWarehouseId)
+        documentNo:
+          type: string
+          description: Document number; auto-generated if omitted
+        note:
+          type: string
+        transferredAt:
+          type: string
+          format: date-time
+          description: Transfer date; defaults to now
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferItemRequest'
+
+    TransferOrderItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+        costPrice:
+          type: number
+          format: double
+
+    TransferOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        documentNo:
+          type: string
+        fromWarehouseId:
+          type: integer
+          format: int64
+        fromWarehouseName:
+          type: string
+        toWarehouseId:
+          type: integer
+          format: int64
+        toWarehouseName:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        note:
+          type: string
+        transferredAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferOrderItemResponse'
+
+    # ── Writeoff schemas ───────────────────────────────────────────────────────
+
+    WriteoffItemRequest:
+      type: object
+      required: [productName, quantity]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+          minimum: 0.001
+        costPrice:
+          type: number
+          format: double
+          default: 0
+
+    CreateWriteoffOrderRequest:
+      type: object
+      required: [warehouseId, items]
+      properties:
+        companyId:
+          type: integer
+          format: int64
+        warehouseId:
+          type: integer
+          format: int64
+        documentNo:
+          type: string
+          description: Document number; auto-generated if omitted
+        objectName:
+          type: string
+          description: Object/reason of write-off
+        counterpartyName:
+          type: string
+          description: Counterparty (supplier/partner) associated with this write-off
+        note:
+          type: string
+        writtenOffAt:
+          type: string
+          format: date-time
+          description: Write-off date; defaults to now
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteoffItemRequest'
+
+    WriteoffOrderItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        quantity:
+          type: number
+          format: double
+        costPrice:
+          type: number
+          format: double
+        amount:
+          type: number
+          format: double
+          description: quantity × costPrice
+
+    WriteoffOrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyID:
+          type: integer
+          format: int64
+        warehouseId:
+          type: integer
+          format: int64
+        warehouseName:
+          type: string
+        documentNo:
+          type: string
+        status:
+          type: string
+          enum: [draft, posted, cancelled]
+        totalAmount:
+          type: number
+          format: double
+          description: SUM(quantity × costPrice) across all items
+        objectName:
+          type: string
+        counterpartyName:
+          type: string
+        note:
+          type: string
+        writtenOffAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          format: int64
+        createdByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteoffOrderItemResponse'
