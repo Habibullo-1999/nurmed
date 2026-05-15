@@ -64,5 +64,5 @@ jobs:
             echo "Last commits:"
             git log -3 --oneline
 
-            docker compose down
-            docker compose up -d --build
+            docker compose build
+            docker compose up -d --force-recreate --no-build
