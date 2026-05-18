@@ -54,6 +54,7 @@ type Service interface {
 	CheckDevice(ctx context.Context, deviceInfo structs.DeviceInfo, trustedToken string) (structs.DeviceCheckResponse, string, error)
 	VerifyDevice(ctx context.Context, request structs.DeviceVerificationRequest, pendingToken string) (string, bool, error)
 	TrustPendingDevice(ctx context.Context, pendingToken string) (string, error)
+	Audit(ctx context.Context, entry structs.AuditLog)
 }
 
 type service struct {
@@ -516,7 +517,12 @@ func (s *service) issueTokens(ctx context.Context, user structs.User, meta struc
 		RefreshTokenExpiresAt: now.Add(s.refreshTTL),
 		UserID:                user.ID,
 		UserName:              user.UserName,
+		CompanyID:             user.CompanyID,
 	}, nil
+}
+
+func (s *service) Audit(ctx context.Context, entry structs.AuditLog) {
+	s.audit(ctx, entry)
 }
 
 func (s *service) audit(ctx context.Context, entry structs.AuditLog) {

@@ -31,6 +31,7 @@ type AuthTokens struct {
 	RefreshTokenExpiresAt time.Time
 	UserID                int64
 	UserName              string
+	CompanyID             int64
 }
 
 type AuthResponse struct {
@@ -39,6 +40,7 @@ type AuthResponse struct {
 	TokenType            string    `json:"tokenType"`
 	UserID               int64     `json:"userId"`
 	UserName             string    `json:"userName"`
+	CompanyID            int64     `json:"companyId"`
 }
 
 type AccessClaims struct {

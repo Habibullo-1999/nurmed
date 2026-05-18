@@ -12,6 +12,7 @@ import (
 	intauth "nurmed/internal/auth"
 	"nurmed/internal/structs"
 	"nurmed/pkg/config"
+	"nurmed/pkg/ctxutil"
 	"nurmed/pkg/logger"
 )
 
@@ -20,6 +21,11 @@ const (
 	ContextUserIDKey    = "auth.user_id"
 	ContextScopeKey     = "auth.request_scope"
 )
+
+// SetActorID embeds the authenticated user ID into the Go request context.
+func SetActorID(c *gin.Context, userID int64) {
+	c.Request = c.Request.WithContext(ctxutil.WithActorID(c.Request.Context(), userID))
+}
 
 type Manager struct {
 	authSvs      intauth.Service
@@ -85,6 +91,7 @@ func (m *Manager) AuthMiddleware() gin.HandlerFunc {
 
 		c.Set(ContextPrincipalKey, principal)
 		c.Set(ContextUserIDKey, principal.UserID)
+		SetActorID(c, principal.UserID)
 		c.Next()
 	}
 }
@@ -119,6 +126,20 @@ func (m *Manager) ScopeMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set(ContextScopeKey, scope)
+		c.Next()
+	}
+}
+
+func (m *Manager) SuperAdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		principal, ok := GetPrincipal(c)
+		if !ok || !principal.IsSuperAdmin {
+			c.AbortWithStatusJSON(http.StatusForbidden, structs.Response{
+				Code:    http.StatusForbidden,
+				Message: "Forbidden",
+			})
+			return
+		}
 		c.Next()
 	}
 }

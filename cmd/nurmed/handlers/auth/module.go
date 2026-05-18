@@ -83,6 +83,7 @@ func (h *handler) Login(c *gin.Context) {
 		TokenType:            "Bearer",
 		UserID:               tokens.UserID,
 		UserName:             tokens.UserName,
+		CompanyID:            tokens.CompanyID,
 	}
 }
 
@@ -119,6 +120,7 @@ func (h *handler) Refresh(c *gin.Context) {
 		TokenType:            "Bearer",
 		UserID:               tokens.UserID,
 		UserName:             tokens.UserName,
+		CompanyID:            tokens.CompanyID,
 	}
 }
 

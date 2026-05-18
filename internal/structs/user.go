@@ -67,6 +67,14 @@ type UserResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type UpdateUserRequest struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
+	Status    string `json:"status"`
+}
+
 type UserFilter struct {
 	ID           int64  `form:"id" json:"id,omitempty"`
 	CompanyID    int64  `form:"company_id" json:"companyID,omitempty"`

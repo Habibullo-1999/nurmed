@@ -8,6 +8,8 @@ servers:
 tags:
   - name: Health
   - name: Auth
+  - name: Admin / Companies
+  - name: Admin / Users
   - name: Users
   - name: Products
   - name: Sales
@@ -258,6 +260,304 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+
+  # ── Admin / Companies ────────────────────────────────────────────────────────
+
+  /admin/company:
+    get:
+      tags: [Admin / Companies]
+      summary: List companies
+      description: Доступно только суперадмину (isSuperAdmin = true).
+      operationId: adminGetCompanies
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+          description: Фильтр по названию (ILIKE)
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive]
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Список компаний
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CompanyResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Admin / Companies]
+      summary: Create company
+      description: Доступно только суперадмину.
+      operationId: adminCreateCompany
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+      responses:
+        '200':
+          description: Компания создана
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/company/{id}:
+    put:
+      tags: [Admin / Companies]
+      summary: Update company
+      description: Доступно только суперадмину. Обновляет name и/или status. Передай только нужные поля.
+      operationId: adminUpdateCompany
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Компания обновлена
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Admin / Companies]
+      summary: Soft-delete company
+      description: Доступно только суперадмину. Мягкое удаление — устанавливает deleted_at. Компания больше не видна в списках.
+      operationId: adminDeleteCompany
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Компания удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Admin / Users ─────────────────────────────────────────────────────────────
+
+  /admin/users:
+    get:
+      tags: [Admin / Users]
+      summary: List users (admin)
+      description: Доступно только суперадмину. Может фильтровать по любой компании.
+      operationId: adminGetUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: company_id
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [active, blocked, invited, deleted]
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Admin / Users]
+      summary: Create user (admin)
+      description: |
+        Доступно только суперадмину. companyId передаётся в теле запроса.
+        В отличие от POST /users — нет ограничений по scope, суперадмин может создать пользователя в любой компании.
+      operationId: adminCreateUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/users/{id}:
+    put:
+      tags: [Admin / Users]
+      summary: Update user (admin)
+      description: |
+        Доступно только суперадмину. Обновляет firstName, lastName, phone, email, status.
+        Для изменения пароля используй отдельный эндпоинт (не реализован).
+      operationId: adminUpdateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Admin / Users]
+      summary: Soft-delete user (admin)
+      description: Доступно только суперадмину. Мягкое удаление — устанавливает status = 'deleted'. Пользователь не может войти в систему.
+      operationId: adminDeleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Пользователь удалён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /products:
     get:
@@ -1704,6 +2004,68 @@ components:
           format: int64
         userName:
           type: string
+        companyId:
+          type: integer
+          format: int64
+          description: ID компании пользователя. 0 для суперадминов без привязки к компании.
+
+    CreateCompanyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: ООО МедЦентр
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+
+    UpdateCompanyRequest:
+      type: object
+      description: Передай только поля, которые нужно изменить.
+      properties:
+        name:
+          type: string
+          example: ООО МедЦентр 2
+        status:
+          type: string
+          enum: [active, inactive]
+
+    CompanyResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateUserRequest:
+      type: object
+      description: Передай только поля, которые нужно изменить.
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, blocked, invited, deleted]
 
     UserRoleAssignment:
       type: object

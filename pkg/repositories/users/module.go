@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/fx"
 
-	"github.com/jmoiron/sqlx"
 	"nurmed/internal/interfaces"
 	"nurmed/internal/structs"
 	"nurmed/pkg/logger"
@@ -280,4 +281,57 @@ func scanUser(scanner rowScanner) (structs.User, error) {
 	}
 
 	return user, nil
+}
+
+func (r repo) UpdateUser(ctx context.Context, id int64, req structs.UpdateUserRequest) (structs.User, error) {
+	var sets []string
+	var v []interface{}
+
+	if strings.TrimSpace(req.FirstName) != "" {
+		sets = append(sets, "first_name = ?")
+		v = append(v, strings.TrimSpace(req.FirstName))
+	}
+	if strings.TrimSpace(req.LastName) != "" {
+		sets = append(sets, "last_name = ?")
+		v = append(v, strings.TrimSpace(req.LastName))
+	}
+	if strings.TrimSpace(req.Phone) != "" {
+		sets = append(sets, "phone = ?")
+		v = append(v, strings.TrimSpace(req.Phone))
+	}
+	if strings.TrimSpace(req.Email) != "" {
+		sets = append(sets, "email = ?")
+		v = append(v, strings.TrimSpace(req.Email))
+	}
+	if strings.TrimSpace(req.Status) != "" {
+		sets = append(sets, "status = ?")
+		v = append(v, strings.ToLower(strings.TrimSpace(req.Status)))
+	}
+	if len(sets) == 0 {
+		return structs.User{}, nil
+	}
+
+	sets = append(sets, "updated_at = ?")
+	v = append(v, time.Now().UTC())
+	v = append(v, id)
+
+	query := fmt.Sprintf(
+		`UPDATE users SET %s WHERE id = ? RETURNING %s;`,
+		strings.Join(sets, ", "),
+		columns(),
+	)
+
+	return scanUser(r.db.QueryRow(ctx, sqlx.Rebind(sqlx.DOLLAR, query), v...))
+}
+
+func (r repo) DeleteUser(ctx context.Context, id int64) error {
+	query := `UPDATE users SET status = 'deleted', updated_at = $1 WHERE id = $2 AND status != 'deleted';`
+	tag, err := r.db.Exec(ctx, query, time.Now().UTC(), id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }

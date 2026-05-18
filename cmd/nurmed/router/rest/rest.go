@@ -9,6 +9,7 @@ import (
 	"go.uber.org/fx"
 
 	authhandler "nurmed/cmd/nurmed/handlers/auth"
+	companyhandler "nurmed/cmd/nurmed/handlers/company"
 	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
 	productshandler "nurmed/cmd/nurmed/handlers/products"
 	purchaseshandler "nurmed/cmd/nurmed/handlers/purchases"
@@ -34,6 +35,7 @@ type Params struct {
 	Logger           logger.ILogger
 	AuthService      auth.Service
 	AuthHandler      authhandler.Handler
+	CompanyHandler   companyhandler.Handler
 	Products         productshandler.Handler
 	Purchases        purchaseshandler.Handler
 	UserHandler      users.Handler
@@ -73,6 +75,22 @@ func NewRouter(params Params) {
 			)
 			usersAPI.GET("", mw.PermissionMiddleware("users.read"), params.UserHandler.GetUsers)
 			usersAPI.POST("", mw.PermissionMiddleware("users.create"), params.UserHandler.CreateUser)
+		}
+
+		adminAPI := api.Group("/admin")
+		{
+			adminAPI.Use(
+				mw.AuthMiddleware(),
+				mw.SuperAdminMiddleware(),
+			)
+			adminAPI.GET("/company", params.CompanyHandler.GetCompanies)
+			adminAPI.POST("/company", params.CompanyHandler.CreateCompany)
+			adminAPI.PUT("/company/:id", params.CompanyHandler.UpdateCompany)
+			adminAPI.DELETE("/company/:id", params.CompanyHandler.DeleteCompany)
+			adminAPI.GET("/users", params.UserHandler.GetUsers)
+			adminAPI.POST("/users", params.UserHandler.AdminCreateUser)
+			adminAPI.PUT("/users/:id", params.UserHandler.UpdateUser)
+			adminAPI.DELETE("/users/:id", params.UserHandler.DeleteUser)
 		}
 
 		salesAPI := api.Group("/sales")
