@@ -3,6 +3,7 @@ package internal
 import (
 	"go.uber.org/fx"
 
+	"nurmed/internal/accounting"
 	"nurmed/internal/auth"
 	"nurmed/internal/company"
 	"nurmed/internal/products"
@@ -13,6 +14,7 @@ import (
 )
 
 var Module = fx.Options(
+	accounting.Module,
 	auth.Module,
 	company.Module,
 	products.Module,

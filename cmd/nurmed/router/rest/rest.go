@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
+	accountinghandler "nurmed/cmd/nurmed/handlers/accounting"
 	authhandler "nurmed/cmd/nurmed/handlers/auth"
 	companyhandler "nurmed/cmd/nurmed/handlers/company"
 	restmiddleware "nurmed/cmd/nurmed/handlers/middleware"
@@ -30,17 +31,18 @@ var Module = fx.Options(
 
 type Params struct {
 	fx.In
-	Lifecycle        fx.Lifecycle
-	Config           config.Config
-	Logger           logger.ILogger
-	AuthService      auth.Service
-	AuthHandler      authhandler.Handler
-	CompanyHandler   companyhandler.Handler
-	Products         productshandler.Handler
-	Purchases        purchaseshandler.Handler
-	UserHandler      users.Handler
-	SalesHandler     saleshandler.Handler
-	WarehouseHandler warehousehandler.Handler
+	Lifecycle          fx.Lifecycle
+	Config             config.Config
+	Logger             logger.ILogger
+	AuthService        auth.Service
+	AuthHandler        authhandler.Handler
+	CompanyHandler     companyhandler.Handler
+	Products           productshandler.Handler
+	Purchases          purchaseshandler.Handler
+	UserHandler        users.Handler
+	SalesHandler       saleshandler.Handler
+	WarehouseHandler   warehousehandler.Handler
+	AccountingHandler  accountinghandler.Handler
 }
 
 func NewRouter(params Params) {
@@ -153,6 +155,36 @@ func NewRouter(params Params) {
 			warehouseAPI.GET("/writeoffs", mw.PermissionMiddleware("warehouse.writeoff.read"), params.WarehouseHandler.GetWriteoffs)
 			warehouseAPI.POST("/writeoffs", mw.PermissionMiddleware("warehouse.writeoff.create"), params.WarehouseHandler.CreateWriteoff)
 			warehouseAPI.PUT("/writeoffs/:id/post", mw.PermissionMiddleware("warehouse.writeoff.post"), params.WarehouseHandler.PostWriteoff)
+		}
+
+		accountingAPI := api.Group("/accounting")
+		{
+			accountingAPI.Use(
+				mw.AuthMiddleware(),
+				mw.ScopeMiddleware(),
+			)
+			accountingAPI.GET("/payment-documents", mw.PermissionMiddleware("accounting.payment_doc.read"), params.AccountingHandler.GetPaymentDocuments)
+			accountingAPI.POST("/payment-documents", mw.PermissionMiddleware("accounting.payment_doc.create"), params.AccountingHandler.CreatePaymentDocument)
+			accountingAPI.GET("/payment-documents/export", mw.PermissionMiddleware("accounting.payment_doc.read"), params.AccountingHandler.ExportPaymentDocuments)
+
+			accountingAPI.GET("/cash-balance", mw.PermissionMiddleware("accounting.cash.read"), params.AccountingHandler.GetCashBalance)
+			accountingAPI.GET("/cash-balance/export", mw.PermissionMiddleware("accounting.cash.read"), params.AccountingHandler.ExportCashBalance)
+
+			accountingAPI.GET("/account-statement", mw.PermissionMiddleware("accounting.statement.read"), params.AccountingHandler.GetAccountStatement)
+			accountingAPI.GET("/account-statement/export", mw.PermissionMiddleware("accounting.statement.read"), params.AccountingHandler.ExportAccountStatement)
+
+			accountingAPI.GET("/counterparty-balance", mw.PermissionMiddleware("accounting.counterparty.read"), params.AccountingHandler.GetCounterpartyBalances)
+			accountingAPI.GET("/counterparty-balance/export", mw.PermissionMiddleware("accounting.counterparty.read"), params.AccountingHandler.ExportCounterpartyBalances)
+
+			accountingAPI.GET("/debt-records", mw.PermissionMiddleware("accounting.debt.read"), params.AccountingHandler.GetDebtRecords)
+			accountingAPI.POST("/debt-records", mw.PermissionMiddleware("accounting.debt.create"), params.AccountingHandler.CreateDebtRecord)
+			accountingAPI.GET("/debt-records/export", mw.PermissionMiddleware("accounting.debt.read"), params.AccountingHandler.ExportDebtRecords)
+
+			accountingAPI.GET("/price-lists", mw.PermissionMiddleware("accounting.pricelist.read"), params.AccountingHandler.GetPriceLists)
+			accountingAPI.POST("/price-lists", mw.PermissionMiddleware("accounting.pricelist.create"), params.AccountingHandler.CreatePriceList)
+
+			accountingAPI.GET("/currency-rates", mw.PermissionMiddleware("accounting.currency.read"), params.AccountingHandler.GetCurrencyRates)
+			accountingAPI.POST("/currency-rates", mw.PermissionMiddleware("accounting.currency.create"), params.AccountingHandler.CreateCurrencyRate)
 		}
 	}
 

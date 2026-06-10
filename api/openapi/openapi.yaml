@@ -15,6 +15,13 @@ tags:
   - name: Sales
   - name: Purchases
   - name: Warehouse
+  - name: Accounting / Payment Documents
+  - name: Accounting / Cash Balance
+  - name: Accounting / Account Statement
+  - name: Accounting / Counterparty Balance
+  - name: Accounting / Debt Records
+  - name: Accounting / Price Lists
+  - name: Accounting / Currency Rates
 paths:
   /health:
     get:
@@ -1821,6 +1828,463 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  # ════════════════════════════════════════════════════════════════════════════
+  # ACCOUNTING MODULE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /accounting/payment-documents:
+    get:
+      tags: [Accounting / Payment Documents]
+      summary: Список платёжных документов
+      operationId: listPaymentDocuments
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: document_no, in: query, schema: {type: string}}
+        - {name: doc_type, in: query, schema: {type: string}}
+        - {name: from, in: query, schema: {type: string, format: date}, example: "2026-01-01"}
+        - {name: to, in: query, schema: {type: string, format: date}, example: "2026-12-31"}
+        - {name: limit, in: query, schema: {type: integer, default: 20}}
+        - {name: offset, in: query, schema: {type: integer, default: 0}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PaymentDocumentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Accounting / Payment Documents]
+      summary: Создать платёжный документ
+      operationId: createPaymentDocument
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentDocumentRequest'
+      responses:
+        '200':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/PaymentDocumentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/payment-documents/export:
+    get:
+      tags: [Accounting / Payment Documents]
+      summary: "Экспорт платёжных документов (кнопка «Ещё»)"
+      operationId: exportPaymentDocuments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [excel, html, tsv]
+            default: excel
+          description: "excel → .xlsx | html → HTML для PDF/Печать | tsv → текст для Скопировать"
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+        - {name: doc_type, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Файл для скачивания
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+            text/html:
+              schema: {type: string}
+            text/plain:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/cash-balance:
+    get:
+      tags: [Accounting / Cash Balance]
+      summary: "Наличность в кассе — баланс на дату"
+      operationId: getCashBalance
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: date, in: query, schema: {type: string, format: date}, example: "2026-06-10", description: "Дата расчёта баланса (по умолчанию — сегодня)"}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CashRegisterBalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/cash-balance/export:
+    get:
+      tags: [Accounting / Cash Balance]
+      summary: "Экспорт наличности в кассе (кнопка «Ещё»)"
+      operationId: exportCashBalance
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: format, in: query, schema: {type: string, enum: [excel, html, tsv], default: excel}}
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: date, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Файл для скачивания
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+            text/html:
+              schema: {type: string}
+            text/plain:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/account-statement:
+    get:
+      tags: [Accounting / Account Statement]
+      summary: "Выписка по счёту"
+      operationId: getAccountStatement
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: cash_register_id, in: query, schema: {type: integer}}
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+        - {name: limit, in: query, schema: {type: integer, default: 20}}
+        - {name: offset, in: query, schema: {type: integer, default: 0}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AccountStatementRow'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/account-statement/export:
+    get:
+      tags: [Accounting / Account Statement]
+      summary: "Экспорт выписки по счёту (кнопка «Ещё»)"
+      operationId: exportAccountStatement
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: format, in: query, schema: {type: string, enum: [excel, html, tsv], default: excel}}
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: cash_register_id, in: query, schema: {type: integer}}
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Файл для скачивания
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+            text/html:
+              schema: {type: string}
+            text/plain:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/counterparty-balance:
+    get:
+      tags: [Accounting / Counterparty Balance]
+      summary: "Баланс контрагентов"
+      operationId: listCounterpartyBalances
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+        - name: group_type
+          in: query
+          schema:
+            type: string
+          description: "Фильтр по группе: Клиент, Поставщики и т.д."
+        - {name: search, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, default: 20}}
+        - {name: offset, in: query, schema: {type: integer, default: 0}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CounterpartyBalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/counterparty-balance/export:
+    get:
+      tags: [Accounting / Counterparty Balance]
+      summary: "Экспорт баланса контрагентов (кнопка «Ещё»)"
+      operationId: exportCounterpartyBalances
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: format, in: query, schema: {type: string, enum: [excel, html, tsv], default: excel}}
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: group_type, in: query, schema: {type: string}}
+        - {name: search, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Файл для скачивания
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+            text/html:
+              schema: {type: string}
+            text/plain:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/debt-records:
+    get:
+      tags: [Accounting / Debt Records]
+      summary: "Управление долгами — список"
+      operationId: listDebtRecords
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: status, in: query, schema: {type: string, enum: [active, closed]}}
+        - {name: search, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, default: 20}}
+        - {name: offset, in: query, schema: {type: integer, default: 0}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/DebtRecordResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Accounting / Debt Records]
+      summary: "Создать запись о долге"
+      operationId: createDebtRecord
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDebtRecordRequest'
+      responses:
+        '200':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/DebtRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/debt-records/export:
+    get:
+      tags: [Accounting / Debt Records]
+      summary: "Экспорт управления долгами (кнопка «Ещё»)"
+      operationId: exportDebtRecords
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: format, in: query, schema: {type: string, enum: [excel, html, tsv], default: excel}}
+        - {name: company_id, in: query, schema: {type: integer}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: search, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Файл для скачивания
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+            text/html:
+              schema: {type: string}
+            text/plain:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/price-lists:
+    get:
+      tags: [Accounting / Price Lists]
+      summary: "Прайс-листы — список"
+      operationId: listPriceLists
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PriceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Accounting / Price Lists]
+      summary: "Создать прайс-лист"
+      operationId: createPriceList
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePriceListRequest'
+      responses:
+        '200':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/PriceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /accounting/currency-rates:
+    get:
+      tags: [Accounting / Currency Rates]
+      summary: "Курсы валют"
+      operationId: listCurrencyRates
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: company_id, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CurrencyRateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Accounting / Currency Rates]
+      summary: "Добавить курс валюты"
+      operationId: createCurrencyRate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCurrencyRateRequest'
+      responses:
+        '200':
+          description: Создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      payload:
+                        $ref: '#/components/schemas/CurrencyRateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 
 components:
   securitySchemes:
@@ -2939,3 +3403,350 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WriteoffOrderItemResponse'
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Payment Documents
+  # ──────────────────────────────────────────────────────────────────────────
+  PaymentDocumentResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      companyId:
+        type: integer
+        format: int64
+      documentNo:
+        type: string
+      docDate:
+        type: string
+        format: date-time
+      docType:
+        type: string
+        example: "Приходный кассовый ордер"
+      debitAccount:
+        type: string
+      creditAccount:
+        type: string
+      income:
+        type: number
+        format: double
+      expense:
+        type: number
+        format: double
+      category:
+        type: string
+      note:
+        type: string
+      organization:
+        type: string
+      createdBy:
+        type: integer
+        format: int64
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  CreatePaymentDocumentRequest:
+    type: object
+    required: [docType]
+    properties:
+      companyId:
+        type: integer
+        format: int64
+      documentNo:
+        type: string
+      docDate:
+        type: string
+        format: date-time
+      docType:
+        type: string
+        example: "Приходный кассовый ордер"
+      debitAccount:
+        type: string
+      creditAccount:
+        type: string
+      income:
+        type: number
+        format: double
+        default: 0
+      expense:
+        type: number
+        format: double
+        default: 0
+      category:
+        type: string
+      note:
+        type: string
+      organization:
+        type: string
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Cash Balance
+  # ──────────────────────────────────────────────────────────────────────────
+  CashRegisterBalanceResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+        example: "Алиф"
+      currency:
+        type: string
+        example: "TJS"
+      balance:
+        type: number
+        format: double
+      balanceInTJS:
+        type: number
+        format: double
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Account Statement
+  # ──────────────────────────────────────────────────────────────────────────
+  AccountStatementRow:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      docDate:
+        type: string
+        format: date-time
+      docNo:
+        type: string
+      docType:
+        type: string
+      openingBalance:
+        type: number
+        format: double
+      income:
+        type: number
+        format: double
+      expense:
+        type: number
+        format: double
+      closingBalance:
+        type: number
+        format: double
+      category:
+        type: string
+      note:
+        type: string
+      createdBy:
+        type: integer
+        format: int64
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Counterparty Balance
+  # ──────────────────────────────────────────────────────────────────────────
+  CounterpartyBalanceResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      no:
+        type: integer
+      groupType:
+        type: string
+        example: "Поставщики"
+      name:
+        type: string
+      phone:
+        type: string
+      region:
+        type: string
+      currency:
+        type: string
+        example: "TJS"
+      amount:
+        type: number
+        format: double
+      amountInTJS:
+        type: number
+        format: double
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Debt Records
+  # ──────────────────────────────────────────────────────────────────────────
+  DebtRecordResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      companyId:
+        type: integer
+        format: int64
+      counterpartyId:
+        type: integer
+        format: int64
+      clientName:
+        type: string
+      phone:
+        type: string
+      period:
+        type: string
+      startDate:
+        type: string
+        format: date-time
+      nextPaymentDate:
+        type: string
+        format: date-time
+      lastPaymentDate:
+        type: string
+        format: date-time
+      balance:
+        type: number
+        format: double
+      clientText:
+        type: string
+      adminText:
+        type: string
+      note:
+        type: string
+      channels:
+        type: string
+      status:
+        type: string
+        enum: [active, closed]
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  CreateDebtRecordRequest:
+    type: object
+    required: [balance]
+    properties:
+      companyId:
+        type: integer
+        format: int64
+      counterpartyId:
+        type: integer
+        format: int64
+      clientName:
+        type: string
+      phone:
+        type: string
+      period:
+        type: string
+      startDate:
+        type: string
+        format: date-time
+      nextPaymentDate:
+        type: string
+        format: date-time
+      balance:
+        type: number
+        format: double
+      clientText:
+        type: string
+      adminText:
+        type: string
+      note:
+        type: string
+      channels:
+        type: string
+      status:
+        type: string
+        default: active
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Price Lists
+  # ──────────────────────────────────────────────────────────────────────────
+  PriceListResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      companyId:
+        type: integer
+        format: int64
+      no:
+        type: integer
+      name:
+        type: string
+      note:
+        type: string
+      priceListType:
+        type: string
+        enum: [nomenclature, service]
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  CreatePriceListRequest:
+    type: object
+    required: [name]
+    properties:
+      companyId:
+        type: integer
+        format: int64
+      name:
+        type: string
+      note:
+        type: string
+      priceListType:
+        type: string
+        enum: [nomenclature, service]
+        default: nomenclature
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # ACCOUNTING — Currency Rates
+  # ──────────────────────────────────────────────────────────────────────────
+  CurrencyRateResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      companyId:
+        type: integer
+        format: int64
+      currency:
+        type: string
+        example: "USD"
+      rate:
+        type: number
+        format: double
+        example: 10.95
+      rateDate:
+        type: string
+        format: date-time
+      createdBy:
+        type: integer
+        format: int64
+      createdAt:
+        type: string
+        format: date-time
+
+  CreateCurrencyRateRequest:
+    type: object
+    required: [currency, rate]
+    properties:
+      companyId:
+        type: integer
+        format: int64
+      currency:
+        type: string
+        example: "USD"
+      rate:
+        type: number
+        format: double
+        example: 10.95
+      rateDate:
+        type: string
+        format: date-time

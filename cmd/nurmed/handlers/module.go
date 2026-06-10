@@ -3,6 +3,7 @@ package handlers
 import (
 	"go.uber.org/fx"
 
+	"nurmed/cmd/nurmed/handlers/accounting"
 	"nurmed/cmd/nurmed/handlers/auth"
 	"nurmed/cmd/nurmed/handlers/company"
 	"nurmed/cmd/nurmed/handlers/products"
@@ -13,6 +14,7 @@ import (
 )
 
 var Module = fx.Options(
+	accounting.Module,
 	auth.Module,
 	company.Module,
 	products.Module,

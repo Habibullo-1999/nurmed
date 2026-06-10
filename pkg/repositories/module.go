@@ -3,6 +3,7 @@ package repositories
 import (
 	"go.uber.org/fx"
 
+	"nurmed/pkg/repositories/accounting"
 	"nurmed/pkg/repositories/auth"
 	"nurmed/pkg/repositories/company"
 	"nurmed/pkg/repositories/products"
@@ -13,6 +14,7 @@ import (
 )
 
 var Module = fx.Options(
+	accounting.Module,
 	auth.Module,
 	company.Module,
 	products.Module,
